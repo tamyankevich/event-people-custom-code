@@ -653,6 +653,15 @@ document.addEventListener('DOMContentLoaded', function () {
     initStickyStepsBasic();
 });
 
+// ─── Hero background: contour plot (disabled) ──────────────────────────
+// The WebGL contour-field background below is disabled — it made the hero
+// heading hard to read and felt inconsistent with the rest of the site. Commented
+// out rather than deleted so it can be restored later if we revisit it. To bring it
+// back: uncomment this block and remove/comment out the initHeroVideoObjectPosition
+// block that follows it. Originally added in 41fcc0f ("Replace hero video with WebGL
+// contour field background"); the same disable was done as a straight revert in the
+// EP-rework repo (commit f0d1a52).
+/*
 // Walks up from an element to find the nearest actual background color — most wrapper divs
 // are transparent, so reads on the element itself typically fall straight through to whichever
 // ancestor (usually the section) carries the real color.
@@ -920,6 +929,67 @@ function initHeroContourBackground() {
 document.addEventListener('DOMContentLoaded', () => {
     initHeroContourBackground();
 });
+*/
+
+function initHeroVideoObjectPosition() {
+    const heroVideo = document.getElementById('hero-video');
+    const video = heroVideo && heroVideo.querySelector('.w-background-video video');
+
+    if (!video) return;
+
+    // Base value used at every breakpoint unless overridden below.
+    const defaultSettings = {
+        objectPosition: '50% 50%',
+    };
+
+    // Webflow's standard breakpoints, smallest to largest — only list the values that need to
+    // differ from defaultSettings.
+    const breakpoints = [
+        { maxWidth: 479, overrides: {} },
+        { maxWidth: 767, overrides: {} },
+        { maxWidth: 991, overrides: {
+            objectPosition: '20% 50%',
+        } },
+        { maxWidth: Infinity, overrides: {} },
+    ];
+
+    // Cascade desktop → mobile (matches Webflow's own breakpoint cascade): each breakpoint's
+    // overrides layer on top of the next-larger breakpoint's resolved settings, so a change made
+    // at a larger breakpoint carries down to smaller ones until a smaller breakpoint overrides it itself.
+    (function resolveCascade() {
+        let resolved = defaultSettings;
+        for (let i = breakpoints.length - 1; i >= 0; i--) {
+            resolved = Object.assign({}, resolved, breakpoints[i].overrides);
+            breakpoints[i].resolved = resolved;
+        }
+    })();
+
+    function getSettings() {
+        const windowWidth = window.innerWidth;
+        for (let i = 0; i < breakpoints.length; i++) {
+            if (windowWidth <= breakpoints[i].maxWidth) return breakpoints[i].resolved;
+        }
+        return breakpoints[breakpoints.length - 1].resolved;
+    }
+
+    function applySettings() {
+        video.style.objectPosition = getSettings().objectPosition;
+    }
+
+    applySettings();
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(applySettings, 150);
+    });
+}
+
+// Initialize Hero Video Object Position
+document.addEventListener('DOMContentLoaded', () => {
+    initHeroVideoObjectPosition();
+});
+
 
 const hoverSound = new Audio(
     'https://cdn.prod.website-files.com/6a6a64981fd0e1b6348ade7b/6a715010cc1913997805ba12_ES_User%20Interface%2C%20Click%2C%20Tech%20Button%2005%20-%20Epidemic%20Sound.mp3',
